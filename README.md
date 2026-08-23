@@ -17,6 +17,12 @@ npm test
 npm run build
 ```
 
+Projects can pin the package directly to a release tag:
+
+```bash
+npm install --save-dev github:rnettles/product-knowledge-graph#v0.1.0
+```
+
 ## CLI
 
 ```bash

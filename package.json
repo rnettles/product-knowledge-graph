@@ -1,9 +1,25 @@
 {
   "name": "@vault/product-knowledge-graph",
   "version": "0.1.0",
-  "private": true,
+  "description": "Profile-driven knowledge graph, linter, migration, and reporting tools for documentation-as-code projects.",
   "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./browser": "./dist/pkg-graph.mjs"
+  },
+  "files": [
+    "src",
+    "dist",
+    "profiles",
+    "dashboards",
+    "docs",
+    "README.md"
+  ],
   "bin": { "pkg-graph": "src/cli.js" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rnettles/product-knowledge-graph.git"
+  },
   "scripts": {
     "build": "esbuild src/browser.js --bundle --format=esm --platform=browser --target=es2022 --outfile=dist/pkg-graph.mjs",
     "test": "node --test",

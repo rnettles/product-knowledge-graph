@@ -35,9 +35,8 @@ tags:
 
 ## Implementation status
 
-The reference package is implemented at:
-
-`tools/product-knowledge-graph/`
+The reference package is implemented in the
+[`product-knowledge-graph`](https://github.com/rnettles/product-knowledge-graph) repository.
 
 Current package version: `0.1.0`.
 
