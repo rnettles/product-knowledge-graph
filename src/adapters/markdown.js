@@ -28,5 +28,5 @@ export function parseMarkdown(text, sourceId = "<markdown>") {
 
 export function readMarkdownEstate(root) {
   const absolute = path.resolve(root);
-  return filesUnder(absolute).map(file => parseMarkdown(fs.readFileSync(file, "utf8"), path.relative(absolute, file).split(path.sep).join("/")));
+  return filesUnder(absolute).map(file => ({...parseMarkdown(fs.readFileSync(file, "utf8"), path.relative(absolute, file).split(path.sep).join("/")), __fileSize: fs.statSync(file).size}));
 }
