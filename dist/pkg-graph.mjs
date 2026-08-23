@@ -7220,6 +7220,70 @@ function contradictions(graph, config = {}) {
   return { report: "contradictions", rows };
 }
 
+// src/reports/planning-focus.js
+var directImplementers = (graph, artifact) => {
+  const out = /* @__PURE__ */ new Map();
+  for (const id of artifact.ids) for (const candidate of graph.indexes.inverseRealizesByReference.get(id) ?? [])
+    out.set(candidate.sourceId, candidate);
+  return [...out.values()];
+};
+var lineage = (graph, subject) => {
+  const out = [], seen = /* @__PURE__ */ new Set(), queue = [subject];
+  while (queue.length) {
+    const current = queue.shift();
+    if (seen.has(current.sourceId)) continue;
+    seen.add(current.sourceId);
+    out.push(current);
+    for (const reference of current.parentRefs) {
+      const parent = graph.resolve(reference).target;
+      if (parent) queue.push(parent);
+    }
+  }
+  return out;
+};
+var priorityOf = (graph, subject, rules = []) => {
+  const ancestors = lineage(graph, subject);
+  for (const rule of rules) {
+    const ids2 = new Set(ancestors.flatMap((item2) => item2.ids));
+    if (rule.ancestor_ids?.some((id) => ids2.has(id))) return rule.id;
+    if (rule.collections?.some((collection) => ancestors.some((item2) => item2.collection === collection))) return rule.id;
+    if (rule.default === true) return rule.id;
+  }
+  return null;
+};
+function planningFocus(graph, config = graph.profile.reports.planning_focus ?? {}) {
+  const chainKinds = new Set(config.chain_kinds ?? []);
+  const untracedKinds = new Set(config.untraced_kinds ?? config.chain_kinds ?? []);
+  const expected = config.expected_implementers ?? {};
+  const weights = { untraced: 3, missing_predecessor: 2, missing_implementer: 1, ...config.weights ?? {} };
+  const predecessor = config.predecessor_check;
+  const rows = subjects(graph).map((subject) => {
+    const artifacts = subjectArtifacts(graph, subject, { includeDescendants: false });
+    const chain = artifacts.filter((item2) => chainKinds.has(item2.kind));
+    const untraced = chain.filter((item2) => untracedKinds.has(item2.kind) && !item2.realizesRefs.length);
+    const missingPredecessor = predecessor ? artifacts.filter((item2) => item2.kind === predecessor.source_kind && !directImplementers(graph, item2).some((candidate) => candidate.kind === predecessor.implementer_kind)) : [];
+    const missingImplementers = [];
+    for (const artifact of artifacts) {
+      const actual = new Set(directImplementers(graph, artifact).map((item2) => item2.kind));
+      for (const kind of expected[artifact.kind] ?? []) if (!actual.has(kind))
+        missingImplementers.push({ artifactId: identity(artifact), artifact: label(artifact), expectedKind: kind });
+    }
+    return {
+      subjectId: identity(subject),
+      subject: label(subject),
+      subjectPath: subject.path,
+      collection: subject.collection,
+      priority: priorityOf(graph, subject, config.priority_rules),
+      docs: chain.length,
+      untraced: untraced.map((item2) => identity(item2)),
+      missingPredecessor: missingPredecessor.map((item2) => identity(item2)),
+      missingImplementers,
+      score: weights.untraced * untraced.length + weights.missing_predecessor * missingPredecessor.length + weights.missing_implementer * missingImplementers.length
+    };
+  });
+  return { report: "planning-focus", formula: { weights }, rows };
+}
+
 // src/reports/index.js
 var REPORTS = {
   "estate-health": (g, o) => estateHealth(g, o.findings ?? []),
@@ -7232,7 +7296,8 @@ var REPORTS = {
   "review-freshness": (g, o) => reviewFreshness(g, o.now),
   "work-queue": (g, o) => workQueue(g, o.config),
   "capability-traceability": (g, o) => capabilityTraceability(g, o.config),
-  "contradictions": (g, o) => contradictions(g, o.config)
+  "contradictions": (g, o) => contradictions(g, o.config),
+  "planning-focus": (g, o) => planningFocus(g, o.config)
 };
 function runReport(name, graph, options = {}) {
   const report = REPORTS[name];

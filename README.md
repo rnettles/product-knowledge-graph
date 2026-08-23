@@ -33,5 +33,5 @@ node src/cli.js report scope-ladder --profile profiles/example-profile.yaml --so
 node src/cli.js report intent-coverage --profile profiles/example-profile.yaml --source tests/.fixtures/valid --seed CAP-007
 ```
 
-The reports are read-only graph consumers. Project vocabulary, constraints, maturity ladders, and
+The reports are read-only graph consumers. Project vocabulary, constraints, maturity ladders, planning-focus scoring and priority rules, and
 report policy come from a versioned project profile.

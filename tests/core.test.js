@@ -67,9 +67,22 @@ test("generic reports run from profile configuration", () => {
 test("reports do not mutate normalized records", () => {
   const graph = graphAt("valid");
   const before = JSON.stringify(graph.records);
-  for (const name of ["structure-explorer", "scope-ladder", "traceability-explorer", "review-freshness", "work-queue"])
+  for (const name of ["structure-explorer", "scope-ladder", "traceability-explorer", "review-freshness", "work-queue", "planning-focus"])
     runReport(name, graph, { config: profile.reports[name.replaceAll("-", "_")] });
   assert.equal(JSON.stringify(graph.records), before);
+});
+
+test("planning focus derives missing stages and project-configured priority", () => {
+  const graph = graphAt("valid");
+  const report = runReport("planning-focus", graph, {config: {
+    chain_kinds: ["requirement", "technical-design"],
+    predecessor_check: {source_kind: "requirement", implementer_kind: "technical-design"},
+    expected_implementers: {requirement: ["technical-design", "capability"]},
+    priority_rules: [{id: "P1", ancestor_ids: ["SUBJ-account"]}]
+  }});
+  assert.equal(report.rows[0].priority, "P1");
+  assert.equal(report.rows[0].missingImplementers.length, 1);
+  assert.equal(report.rows[0].score, 1);
 });
 
 test("declarative source policies cover YAML, projection, collision, surface, body references, and structural indexes", () => {

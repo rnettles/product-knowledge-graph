@@ -7,6 +7,7 @@ export * from "./review-freshness.js";
 export * from "./work-queue.js";
 export * from "./capability-traceability.js";
 export * from "./contradictions.js";
+export * from "./planning-focus.js";
 
 import { estateHealth } from "./estate-health.js";
 import { structureExplorer } from "./structure-explorer.js";
@@ -17,6 +18,7 @@ import { reviewFreshness } from "./review-freshness.js";
 import { workQueue } from "./work-queue.js";
 import { capabilityTraceability } from "./capability-traceability.js";
 import { contradictions } from "./contradictions.js";
+import { planningFocus } from "./planning-focus.js";
 
 export const REPORTS = {
   "estate-health": (g, o) => estateHealth(g, o.findings ?? []),
@@ -29,7 +31,8 @@ export const REPORTS = {
   "review-freshness": (g, o) => reviewFreshness(g, o.now),
   "work-queue": (g, o) => workQueue(g, o.config),
   "capability-traceability": (g, o) => capabilityTraceability(g, o.config),
-  "contradictions": (g, o) => contradictions(g, o.config)
+  "contradictions": (g, o) => contradictions(g, o.config),
+  "planning-focus": (g, o) => planningFocus(g, o.config)
 };
 
 export function runReport(name, graph, options = {}) {
