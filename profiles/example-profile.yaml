@@ -1,0 +1,65 @@
+profile: example-project
+version: 1.0.0
+core_version: 1.0.0
+compatible_core: ">=1.0.0 <2.0.0"
+namespace: {prefix: pkg_, nesting: flat}
+host_bindings:
+  title: {property: title, equivalence: exact}
+  owner: {property: owner, equivalence: exact}
+  last_reviewed: {property: last_verified, equivalence: exact}
+  review_after: {property: review_after, equivalence: exact}
+node_kind: node
+artifact_kinds:
+  node: {definition: Named structural subject}
+  capability: {definition: Product intent delivered through subordinate artifacts}
+  requirement:
+    definition: Testable required behavior or constraint
+    required_properties: [pkg_subject]
+  technical-design:
+    definition: Scoped implementation design
+    required_properties: [pkg_subject, pkg_implementation_status]
+authority_statuses:
+  draft: {reader_expectation: do-not-rely}
+  active: {reader_expectation: authoritative}
+  superseded: {requires: [pkg_superseded_by]}
+collections:
+  product: {allows_subjectless_artifacts: true}
+  systems: {allows_subjectless_artifacts: false}
+facets:
+  audience: {cardinality: many, values: [customer, operator, developer]}
+  compliance: {cardinality: many, values: [privacy, security, financial]}
+realization_pairs:
+  capability: []
+  requirement: [capability]
+  technical-design: [requirement]
+implementation:
+  statuses: [planned, in-progress, deployed, retired]
+  source_required_for: [in-progress, deployed]
+invariants:
+  id_pattern: "^INV-[a-z0-9-]+-[0-9]{3}$"
+extensions:
+  pkg_release_train: {type: string, obligation: optional, consumer: release-report}
+reports:
+  scope_ladder:
+    rungs:
+      - id: unstarted
+        label: Unstarted
+        evidence: {artifact_count: {equals: 0}}
+        next_action: Establish subject framing
+      - id: specified
+        label: Specified
+        evidence: {kind_any: [requirement]}
+        next_action: Evaluate realization artifacts
+      - id: designed
+        label: Designed
+        evidence: {kind_any: [technical-design]}
+        next_action: Evaluate implementation work
+    skipped_rungs_allowed: true
+  traceability:
+    expected_children:
+      capability: [requirement]
+      requirement: [technical-design]
+    inferred_edges: display-only
+  work_queue:
+    weights: {unstarted: 3, specified: 2, designed: 1}
+    unstarted_bonus: 1
