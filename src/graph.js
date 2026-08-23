@@ -21,7 +21,7 @@ export function buildGraph(records, profile) {
   };
   const indexes = {
     structuralChildren: new Map(), ownedBySubject: new Map(),
-    inverseRealizes: new Map(), inverseDependsOn: new Map(),
+    inverseRealizes: new Map(), inverseRealizesByReference: new Map(), inverseDependsOn: new Map(),
     invariantDeclarations: new Map(), invariantReferences: new Map(),
     byKind: new Map(), byAuthorityStatus: new Map(), byImplementationStatus: new Map(), byFacet: new Map()
   };
@@ -32,7 +32,7 @@ export function buildGraph(records, profile) {
     for (const [facet, raw] of Object.entries(record.facets)) for (const v of Array.isArray(raw) ? raw : [raw]) add(indexes.byFacet, `${facet}:${v}`, record);
     for (const ref of record.parentRefs) { const r = resolve(ref); if (r.target) add(indexes.structuralChildren, r.target.sourceId, record); }
     for (const ref of record.subjectRefs) { const r = resolve(ref); if (r.target) add(indexes.ownedBySubject, r.target.sourceId, record); }
-    for (const ref of record.realizesRefs) { const r = resolve(ref); if (r.target) add(indexes.inverseRealizes, r.target.sourceId, record); }
+    for (const ref of record.realizesRefs) { const r = resolve(ref); if (r.target) { add(indexes.inverseRealizes, r.target.sourceId, record); add(indexes.inverseRealizesByReference, ref, record); } }
     for (const ref of record.dependencyRefs) { const r = resolve(ref); if (r.target) add(indexes.inverseDependsOn, r.target.sourceId, record); }
     for (const id of record.invariantsDeclared) add(indexes.invariantDeclarations, id, record);
     for (const id of record.invariantsReferenced) add(indexes.invariantReferences, id, record);

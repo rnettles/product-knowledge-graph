@@ -6801,6 +6801,7 @@ function buildGraph(records, profile) {
     structuralChildren: /* @__PURE__ */ new Map(),
     ownedBySubject: /* @__PURE__ */ new Map(),
     inverseRealizes: /* @__PURE__ */ new Map(),
+    inverseRealizesByReference: /* @__PURE__ */ new Map(),
     inverseDependsOn: /* @__PURE__ */ new Map(),
     invariantDeclarations: /* @__PURE__ */ new Map(),
     invariantReferences: /* @__PURE__ */ new Map(),
@@ -6824,7 +6825,10 @@ function buildGraph(records, profile) {
     }
     for (const ref of record.realizesRefs) {
       const r = resolve(ref);
-      if (r.target) add(indexes.inverseRealizes, r.target.sourceId, record);
+      if (r.target) {
+        add(indexes.inverseRealizes, r.target.sourceId, record);
+        add(indexes.inverseRealizesByReference, ref, record);
+      }
     }
     for (const ref of record.dependencyRefs) {
       const r = resolve(ref);
@@ -6993,20 +6997,33 @@ function subjects(graph) {
   const nodeKind = graph.profile.profile.node_kind ?? "node";
   return graph.records.filter((record) => record.kind === nodeKind);
 }
-function subjectArtifacts(graph, subject) {
+function subjectArtifacts(graph, subject, options = {}) {
   const out = [], seen = /* @__PURE__ */ new Set();
   const visit3 = (node) => {
     for (const artifact of graph.indexes.ownedBySubject.get(node.sourceId) ?? []) if (!seen.has(artifact.sourceId)) {
       seen.add(artifact.sourceId);
       out.push(artifact);
     }
-    for (const child of graph.indexes.structuralChildren.get(node.sourceId) ?? []) visit3(child);
+    if (options.includeDescendants !== false) for (const child of graph.indexes.structuralChildren.get(node.sourceId) ?? []) visit3(child);
   };
   visit3(subject);
   return out;
 }
 function intentClosure(graph, seed) {
-  return closure(graph, seed, graph.indexes.inverseRealizes);
+  const initial = typeof seed === "string" ? seed : identity(seed);
+  const queue = [initial], seenReferences = /* @__PURE__ */ new Set(), seenRecords = /* @__PURE__ */ new Set(), out = [];
+  while (queue.length) {
+    const reference = queue.shift();
+    if (seenReferences.has(reference)) continue;
+    seenReferences.add(reference);
+    for (const record of graph.indexes.inverseRealizesByReference.get(reference) ?? []) {
+      if (seenRecords.has(record.sourceId)) continue;
+      seenRecords.add(record.sourceId);
+      out.push(record);
+      for (const id of record.ids) queue.push(id);
+    }
+  }
+  return out;
 }
 function dependencyClosure(graph, seed) {
   return closure(graph, seed, graph.indexes.inverseDependsOn);
@@ -7020,6 +7037,8 @@ function evaluateEvidence(evidence = {}, artifacts = []) {
   }
   if (evidence.kind_any?.length && !artifacts.some((item2) => evidence.kind_any.includes(item2.kind))) return false;
   if (evidence.kind_all?.length && !evidence.kind_all.every((kind) => artifacts.some((item2) => item2.kind === kind))) return false;
+  if (evidence.kind_none?.length && artifacts.some((item2) => evidence.kind_none.includes(item2.kind))) return false;
+  if (evidence.kind_groups_all?.length && !evidence.kind_groups_all.every((group) => artifacts.some((item2) => group.includes(item2.kind)))) return false;
   if (evidence.implementation_status?.length && !artifacts.some((item2) => evidence.implementation_status.includes(item2.implementationStatus))) return false;
   return true;
 }
@@ -7052,12 +7071,14 @@ function structureExplorer(graph) {
 function scopeLadder(graph, config = graph.profile.reports.scope_ladder ?? {}) {
   const rungs = config.rungs ?? [];
   const rows = subjects(graph).map((subject) => {
-    const artifacts = subjectArtifacts(graph, subject);
+    const artifacts = subjectArtifacts(graph, subject, { includeDescendants: config.include_descendants !== false });
     let selected = rungs[0] ?? { id: "unconfigured", label: "Unconfigured" };
     for (const rung of rungs) if (evaluateEvidence(rung.evidence, artifacts)) selected = rung;
     return {
       subjectId: identity(subject),
       subject: label(subject),
+      subjectPath: subject.path,
+      under: subject.path ? subject.path.split("/").slice(0, -2).join("/") : "",
       collection: subject.collection,
       rung: selected.id,
       stage: selected.label ?? selected.id,
@@ -7069,7 +7090,7 @@ function scopeLadder(graph, config = graph.profile.reports.scope_ladder ?? {}) {
     };
   });
   const tally = Object.fromEntries(rungs.map((rung) => [rung.id, rows.filter((row) => row.rung === rung.id).length]));
-  return { report: "scope-ladder", configured: Boolean(rungs.length), rungs, tally, rows };
+  return { report: "scope-ladder", configured: Boolean(rungs.length), includeDescendants: config.include_descendants !== false, rungs, tally, rows };
 }
 
 // src/reports/traceability-explorer.js
@@ -7132,13 +7153,36 @@ function reviewFreshness(graph, now = /* @__PURE__ */ new Date()) {
 function workQueue(graph, config = graph.profile.reports.work_queue ?? {}) {
   const ladder = scopeLadder(graph, graph.profile.reports.scope_ladder ?? {});
   const weights = config.weights ?? {};
-  const rows = ladder.rows.map((row) => ({
+  const rungOrder = new Map(ladder.rungs.map((rung, index) => [rung.id, index]));
+  const rows = ladder.rows.filter((row) => config.include_unstarted !== false || row.artifactCount > 0).map((row) => ({
     ...row,
+    under: row.under,
     score: Number(weights[row.rung] ?? 0) + (row.artifactCount ? 0 : Number(config.unstarted_bonus ?? 0)),
     class: "assessment",
     severity: "metric"
-  })).sort((a, b) => b.score - a.score || a.subject.localeCompare(b.subject));
+  })).sort((a, b) => config.sort === "rung-location-docs" ? (rungOrder.get(a.rung) ?? 0) - (rungOrder.get(b.rung) ?? 0) || a.under.localeCompare(b.under) || b.artifactCount - a.artifactCount || a.subject.localeCompare(b.subject) : b.score - a.score || a.subject.localeCompare(b.subject));
   return { report: "work-queue", formula: { weights, unstarted_bonus: config.unstarted_bonus ?? 0 }, rows };
+}
+
+// src/reports/capability-traceability.js
+function capabilityTraceability(graph, config = {}) {
+  const pattern = new RegExp(config.identity_pattern ?? "^CAP-[0-9]+", "i");
+  const expected = config.expected_kinds ?? [];
+  const rows = [];
+  for (const record of graph.records) for (const id of record.ids.filter((value2) => pattern.test(value2))) {
+    const reached = intentClosure(graph, id);
+    const kinds = [...new Set(reached.map((value2) => value2.kind).filter(Boolean))].sort();
+    rows.push({
+      capability: id,
+      registerId: record.ids[0],
+      register: label(record),
+      tracedArtifacts: reached.length,
+      kinds,
+      missingKinds: expected.filter((kind) => !kinds.includes(kind))
+    });
+  }
+  rows.sort((a, b) => a.capability.localeCompare(b.capability, void 0, { numeric: true }));
+  return { report: "capability-traceability", expectedKinds: expected, rows };
 }
 
 // src/reports/index.js
@@ -7151,7 +7195,8 @@ var REPORTS = {
   "dependency-impact": (g, o) => dependencyImpact(g, o.seed),
   "invariant-blast-radius": (g, o) => invariantBlastRadius(g, o.invariant),
   "review-freshness": (g, o) => reviewFreshness(g, o.now),
-  "work-queue": (g, o) => workQueue(g, o.config)
+  "work-queue": (g, o) => workQueue(g, o.config),
+  "capability-traceability": (g, o) => capabilityTraceability(g, o.config)
 };
 function runReport(name, graph, options = {}) {
   const report = REPORTS[name];

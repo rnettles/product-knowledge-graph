@@ -96,3 +96,14 @@ test("declarative source policies cover YAML, projection, collision, surface, bo
   for (const code of ["SOURCE-YAML-001", "SOURCE-PROJECTION-001", "SOURCE-PROJECTION-002", "SOURCE-SURFACE-001", "SOURCE-BODY-REF-001", "SOURCE-STRUCTURE-001"])
     assert.ok(codes.has(code), code);
 });
+
+test("capability closure preserves alternate-identity edge granularity", () => {
+  const sources = [
+    {sourceId: "register", title: "Register", pkg_ids: ["REGISTER", "CAP-1", "CAP-2"], pkg_artifact_kind: "capability", pkg_authority_status: "active", owner: "Owner", last_verified: "2026-08-23"},
+    {sourceId: "one", title: "One", pkg_ids: ["REQ-1"], pkg_artifact_kind: "requirement", pkg_authority_status: "active", pkg_realizes: ["CAP-1"], owner: "Owner", last_verified: "2026-08-23"},
+    {sourceId: "two", title: "Two", pkg_ids: ["REQ-2"], pkg_artifact_kind: "requirement", pkg_authority_status: "active", pkg_realizes: ["CAP-2"], owner: "Owner", last_verified: "2026-08-23"}
+  ];
+  const graph = buildGraph(normalizeRecords(sources, profile), profile);
+  const report = runReport("capability-traceability", graph, {config: {identity_pattern: "^CAP-"}});
+  assert.deepEqual(report.rows.map(row => [row.capability, row.tracedArtifacts]), [["CAP-1", 1], ["CAP-2", 1]]);
+});
