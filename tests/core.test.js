@@ -136,3 +136,14 @@ test("traceability inference remains display-only and preserves provenance", () 
     [["TD-AREA-001", "US-AREA-001", "display-only"]]);
   assert.deepEqual(graph.resolve("TD-AREA-001").target.realizesRefs, []);
 });
+
+test("portable YAML policy permits explicitly declared schema maps", () => {
+  const raw = structuredClone(profile.profile);
+  raw.source_policies = {portable_yaml_subset: true, portable_yaml_mapping_keys: ["pkg_facets"]};
+  const compiled = compileProfile(raw);
+  const source = {sourceId: "facet.md", path: "facet.md", title: "Facet", pkg_ids: ["FACET-1"],
+    pkg_artifact_kind: "node", pkg_authority_status: "active", pkg_facets: {compliance: "privacy"},
+    owner: "Owner", last_verified: "2026-08-23", __frontmatterRaw: "pkg_facets:\n  compliance: privacy"};
+  const graph = buildGraph(normalizeRecords([source], compiled), compiled);
+  assert.equal(lintSourcePolicies([source], graph).filter(item => item.code === "SOURCE-YAML-001").length, 0);
+});

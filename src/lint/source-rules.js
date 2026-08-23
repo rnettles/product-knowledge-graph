@@ -6,9 +6,10 @@ const issue = (code, message, source, detail = message) => finding(code, "error"
 });
 const wiki = value => String(value ?? "").replace(/^\[\[(.*?)\]\]$/, "$1");
 
-function portableYamlProblems(raw = "") {
+function portableYamlProblems(raw = "", mappingKeys = []) {
   const problems = [];
-  let key = null;
+  let key = null, topKey = null;
+  const mappings = new Set(mappingKeys);
   for (const line of raw.split("\n")) {
     if (!line.trim() || /^\s*#/.test(line)) continue;
     const item = line.match(/^\s+-\s+(.*)$/);
@@ -22,7 +23,10 @@ function portableYamlProblems(raw = "") {
       continue;
     }
     const match = line.match(/^([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$/);
-    if (!match) problems.push(`unsupported YAML: ${line.trim()}`); else key = match[1];
+    if (match) { key = match[1]; topKey = key; continue; }
+    const nested = line.match(/^\s{2}([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$/);
+    if (nested && mappings.has(topKey)) { key = nested[1]; continue; }
+    problems.push(`unsupported YAML: ${line.trim()}`);
   }
   return problems;
 }
@@ -44,7 +48,8 @@ export function lintSourcePolicies(sources, graph) {
   const policy = graph.profile.profile.source_policies ?? {};
   const byPath = new Map(graph.records.map(record => [record.path, record]));
   if (policy.portable_yaml_subset) for (const source of sources) {
-    for (const problem of [...(source.__parseProblems ?? []), ...portableYamlProblems(source.__frontmatterRaw)]) {
+    for (const problem of [...(source.__parseProblems ?? []),
+      ...portableYamlProblems(source.__frontmatterRaw, policy.portable_yaml_mapping_keys)]) {
       out.push(issue("SOURCE-YAML-001", problem, source, problem));
     }
   }

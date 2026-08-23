@@ -1,6 +1,6 @@
 {
   "name": "@vault/product-knowledge-graph",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Profile-driven knowledge graph, linter, migration, and reporting tools for documentation-as-code projects.",
   "type": "module",
   "exports": {
