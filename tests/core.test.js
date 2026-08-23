@@ -120,3 +120,19 @@ test("capability closure preserves alternate-identity edge granularity", () => {
   const report = runReport("capability-traceability", graph, {config: {identity_pattern: "^CAP-"}});
   assert.deepEqual(report.rows.map(row => [row.capability, row.tracedArtifacts]), [["CAP-1", 1], ["CAP-2", 1]]);
 });
+
+test("traceability inference remains display-only and preserves provenance", () => {
+  const sources = [
+    {sourceId: "subject", path: "subject.md", title: "Subject", pkg_ids: ["SUBJ-1"], pkg_artifact_kind: "node", pkg_authority_status: "active", owner: "Owner", last_verified: "2026-08-23"},
+    {sourceId: "story", path: "US-AREA-001.md", title: "Story", pkg_ids: ["US-AREA-001"], pkg_artifact_kind: "requirement", pkg_authority_status: "active", pkg_subject: ["SUBJ-1"], owner: "Owner", last_verified: "2026-08-23"},
+    {sourceId: "design", path: "TD-AREA-001.md", title: "Design", pkg_ids: ["TD-AREA-001"], pkg_artifact_kind: "technical-design", pkg_authority_status: "active", pkg_subject: ["SUBJ-1"], owner: "Owner", last_verified: "2026-08-23"}
+  ];
+  const graph = buildGraph(normalizeRecords(sources, profile), profile);
+  const report = runReport("traceability-explorer", graph, {config: {inferred_parent: {
+    identity_pattern: "[A-Z]{2,}-(?<key>[A-Z]+-[0-9]{3})", expected_parent_by_kind: {"technical-design": "requirement"},
+    stage_ranks: {requirement: 1, "technical-design": 2}
+  }}});
+  assert.deepEqual(report.inferredPlacements.map(row => [row.artifactId, row.inferredParentId, row.authority]),
+    [["TD-AREA-001", "US-AREA-001", "display-only"]]);
+  assert.deepEqual(graph.resolve("TD-AREA-001").target.realizesRefs, []);
+});
