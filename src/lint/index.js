@@ -1,5 +1,6 @@
 export * from "./rules.js";
 export * from "./baseline.js";
+export * from "./source-rules.js";
 
 import { lintCore, lintProject, lintDiagnostics } from "./rules.js";
 

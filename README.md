@@ -20,7 +20,7 @@ npm run build
 Projects can pin the package directly to a release tag:
 
 ```bash
-npm install --save-dev github:rnettles/product-knowledge-graph#v0.1.0
+npm install --save-dev github:rnettles/product-knowledge-graph#v0.2.0
 ```
 
 ## CLI

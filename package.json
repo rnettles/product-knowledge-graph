@@ -1,6 +1,6 @@
 {
   "name": "@vault/product-knowledge-graph",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Profile-driven knowledge graph, linter, migration, and reporting tools for documentation-as-code projects.",
   "type": "module",
   "exports": {
@@ -15,7 +15,9 @@
     "docs",
     "README.md"
   ],
-  "bin": { "pkg-graph": "src/cli.js" },
+  "bin": {
+    "pkg-graph": "src/cli.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rnettles/product-knowledge-graph.git"
@@ -26,7 +28,13 @@
     "lint:example": "node src/cli.js lint --profile profiles/example-profile.yaml --source tests/.fixtures/valid",
     "report:example": "node src/cli.js report estate-health --profile profiles/example-profile.yaml --source tests/.fixtures/valid"
   },
-  "dependencies": { "yaml": "^2.8.1" },
-  "devDependencies": { "esbuild": "^0.25.9" },
-  "engines": { "node": ">=20" }
+  "dependencies": {
+    "yaml": "^2.8.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.9"
+  },
+  "engines": {
+    "node": ">=20"
+  }
 }

@@ -8,6 +8,7 @@ import { readMarkdownEstate } from "../src/adapters/markdown.js";
 import { normalizeRecords } from "../src/normalize.js";
 import { buildGraph } from "../src/graph.js";
 import { lintEstate } from "../src/lint/index.js";
+import { lintSourcePolicies } from "../src/lint/source-rules.js";
 import { compareBaseline } from "../src/lint/baseline.js";
 import { findingIdentity } from "../src/model.js";
 import { runReport } from "../src/reports/index.js";
@@ -69,4 +70,29 @@ test("reports do not mutate normalized records", () => {
   for (const name of ["structure-explorer", "scope-ladder", "traceability-explorer", "review-freshness", "work-queue"])
     runReport(name, graph, { config: profile.reports[name.replaceAll("-", "_")] });
   assert.equal(JSON.stringify(graph.records), before);
+});
+
+test("declarative source policies cover YAML, projection, collision, surface, body references, and structural indexes", () => {
+  const raw = structuredClone(profile.profile);
+  raw.artifact_kinds.node.surface = "product";
+  raw.artifact_kinds["technical-design"].surface = "engineering";
+  raw.artifact_kinds["technical-design"].bucket = "tdn";
+  raw.collections.product.label = "01 Product";
+  raw.source_policies = {
+    portable_yaml_subset: true,
+    projection: {node_filename: "index.md", forbid_properties_by_surface: {engineering: ["outlineId"]}},
+    body_identity_references: [{pattern: "ADR-[A-Z]+-[0-9]{3}", flags: "g"}],
+    structural_indexes: {filename: "index.md", legacy_kind_property: "doc_kind", always_structural_surfaces: ["engineering"]}
+  };
+  const compiled = compileProfile(raw);
+  const sources = [
+    {sourceId: "product/01 Product/Subject/index.md", path: "product/01 Product/Subject/index.md", pkg_ids: ["Subject"], pkg_artifact_kind: "node", pkg_authority_status: "active", pkg_collection: "product", title: "Subject", owner: "Owner", last_verified: "2026-08-23", __frontmatterRaw: "pkg_ids:\n  - Subject", __body: ""},
+    {sourceId: "wrong/a.md", path: "wrong/a.md", pkg_ids: ["TD-1"], pkg_artifact_kind: "technical-design", pkg_authority_status: "active", pkg_subject: ["Subject"], title: "A", owner: "Owner", last_verified: "2026-08-23", outlineId: "forbidden", __frontmatterRaw: "aliases:\n  - ADR-X: unsafe", __body: "ADR-MISSING-001"},
+    {sourceId: "engineering/01 Product/Subject/tdn/group/a.md", path: "engineering/01 Product/Subject/tdn/group/a.md", pkg_ids: ["TD-2"], pkg_artifact_kind: "technical-design", pkg_authority_status: "active", pkg_subject: ["Subject"], title: "B", owner: "Owner", last_verified: "2026-08-23", __frontmatterRaw: "pkg_ids:\n  - TD-2", __body: ""},
+    {sourceId: "product/01 Product/Ghost/index.md", path: "product/01 Product/Ghost/index.md", title: "Ghost", __frontmatterRaw: "title: Ghost", __body: ""}
+  ];
+  const graph = buildGraph(normalizeRecords(sources.slice(0, 3), compiled), compiled);
+  const codes = new Set(lintSourcePolicies(sources, graph).map(x => x.code));
+  for (const code of ["SOURCE-YAML-001", "SOURCE-PROJECTION-001", "SOURCE-PROJECTION-002", "SOURCE-SURFACE-001", "SOURCE-BODY-REF-001", "SOURCE-STRUCTURE-001"])
+    assert.ok(codes.has(code), code);
 });

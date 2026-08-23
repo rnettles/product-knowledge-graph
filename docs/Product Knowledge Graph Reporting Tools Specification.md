@@ -38,7 +38,7 @@ tags:
 The reference package is implemented in the
 [`product-knowledge-graph`](https://github.com/rnettles/product-knowledge-graph) repository.
 
-Current package version: `0.1.0`.
+Current package version: `0.2.0`.
 
 Implemented capabilities include:
 
@@ -53,6 +53,8 @@ Implemented capabilities include:
 - command-line interface;
 - browser bundle and thin Obsidian dashboard templates;
 - synthetic valid and invalid project estates with automated tests.
+- declarative portable-YAML, publication-surface, projection, collision, body-reference and
+  structural-index validation policies.
 
 The MBS profile and migration are not part of package `0.1.0`; MBS remains the planned integration
 and regression estate.
