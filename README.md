@@ -7,6 +7,7 @@ software projects.
 
 - [Generic Product Knowledge Graph Standard](docs/Generic%20Product%20Knowledge%20Graph%20Standard.md)
 - [Project Profile Guide](docs/Product%20Knowledge%20Graph%20Project%20Profile%20Guide.md)
+- [Software Product Traceability Convention](docs/Software%20Product%20Traceability%20Convention.md)
 - [Reporting Tools Specification](docs/Product%20Knowledge%20Graph%20Reporting%20Tools%20Specification.md)
 
 ## Install and verify
@@ -17,7 +18,9 @@ npm test
 npm run build
 ```
 
-Projects can pin the package directly to a release tag:
+Projects can pin the package directly to a release tag. Software projects can start from
+`profiles/software-product-profile.yaml` and record project-specific deviations rather than
+reimplementing the traceability topology.
 
 ```bash
 npm install --save-dev github:rnettles/product-knowledge-graph#v0.3.1

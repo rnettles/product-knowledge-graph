@@ -1,0 +1,60 @@
+profile: software-product-reference
+version: 1.0.0
+core_version: 1.0.0
+compatible_core: ">=1.0.0 <2.0.0"
+convention: {id: software-product-traceability, version: 1.0.0}
+namespace: {prefix: pkg_, nesting: flat}
+host_bindings:
+  title: {property: title, equivalence: exact}
+  owner: {property: owner, equivalence: exact}
+  last_reviewed: {property: last_reviewed, equivalence: exact}
+  review_after: {property: review_after, equivalence: exact}
+node_kind: node
+artifact_kinds:
+  node: {definition: Named structural subject}
+  capability: {definition: Valuable product outcome or ability}
+  user-story: {definition: User-centered intent and acceptance context}
+  frd: {definition: Testable functional behavior or constraint}
+  user-flow: {definition: Required user actions and progression}
+  wireframe: {definition: Screen structure and layout intent}
+  ux-projection: {definition: Presentation of a domain or interaction model}
+  tdn: {definition: Scoped technical design}
+  adr: {definition: Governing architecture decision}
+  api-contract: {definition: Cross-component interface contract}
+  data-model: {definition: Canonical data schema or model}
+authority_statuses:
+  draft: {reader_expectation: do-not-rely}
+  review: {reader_expectation: awaiting-sign-off}
+  active: {reader_expectation: authoritative}
+  superseded: {requires: [pkg_superseded_by]}
+collections:
+  product: {allows_subjectless_artifacts: true}
+  systems: {allows_subjectless_artifacts: false}
+realization_pairs:
+  node: []
+  capability: []
+  user-story: [capability]
+  frd: [user-story]
+  user-flow: [frd]
+  wireframe: [frd, user-flow]
+  ux-projection: [frd, user-flow]
+  tdn: [frd]
+  adr: []
+  api-contract: []
+  data-model: []
+implementation:
+  statuses: [spec, building, shipped]
+  source_required_for: [building, shipped]
+reports:
+  traceability:
+    expected_children:
+      capability: [user-story]
+      user-story: [frd]
+      frd: [user-flow, wireframe, tdn]
+    inferred_edges: display-only
+  planning_focus:
+    chain_kinds: [user-story, frd, user-flow, wireframe, ux-projection, tdn]
+    predecessor_check: {source_kind: user-story, implementer_kind: frd}
+    expected_implementers:
+      frd: [user-flow, wireframe, tdn]
+    weights: {untraced: 3, missing_predecessor: 2, missing_implementer: 1}

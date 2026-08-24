@@ -190,6 +190,12 @@ For every state define:
 
 ### Step 7 — Define graph constraints
 
+For software-product projects, begin with the
+[Software Product Traceability Convention](Software%20Product%20Traceability%20Convention.md). Adopt
+its branching capability → story → FRD topology, then record representation differences and omitted
+stages in the project profile. Do not copy the diagram into a project and silently change its edge
+meaning.
+
 For `pkg_realizes`, create an allowed-pair matrix and test each pair with the core truth test. Do not
 add an edge merely to complete a visually pleasing ladder.
 

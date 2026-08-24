@@ -19,6 +19,14 @@ const graphAt = name => buildGraph(normalizeRecords(readMarkdownEstate(path.join
 
 test("example profile compiles", () => assert.equal(profile.valid, true));
 
+test("software product reference profile compiles", () => {
+  const raw = YAML.parse(fs.readFileSync(path.join(root, "../profiles/software-product-profile.yaml"), "utf8"));
+  const compiled = compileProfile(raw);
+  assert.equal(compiled.valid, true);
+  assert.deepEqual(raw.reports.traceability.expected_children.frd, ["user-flow", "wireframe", "tdn"]);
+  assert.deepEqual(raw.realization_pairs.tdn, ["frd"]);
+});
+
 test("profile linter rejects incoherent project configuration", () => {
   const broken = structuredClone(profile.profile);
   broken.realization_pairs.requirement = ["undefined-kind"];
