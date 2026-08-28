@@ -9,6 +9,7 @@ software projects.
 - [Project Profile Guide](docs/Product%20Knowledge%20Graph%20Project%20Profile%20Guide.md)
 - [Software Product Traceability Convention](docs/Software%20Product%20Traceability%20Convention.md)
 - [Reporting Tools Specification](docs/Product%20Knowledge%20Graph%20Reporting%20Tools%20Specification.md)
+- [Obsidian Workbench design project](obsidian-plugin/README.md)
 
 ## Install and verify
 
